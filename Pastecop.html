@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastecop Official</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: white;
+            text-align: center;
+        }
+        header {
+            background-color: #333;
+            padding: 15px;
+            color: white;
+        }
+        .container {
+            margin: 20px auto;
+            width: 90%;
+            max-width: 600px;
+        }
+        .input-box {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #282828;
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: white;
+        }
+        .btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #555;
+        }
+        footer {
+            margin-top: 30px;
+            background-color: #333;
+            color: #aaa;
+            padding: 20px 10px;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 0;
+        }
+        footer .subscribe-btn,
+        footer .discord-btn {
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        footer .subscribe-btn {
+            background-color: red;
+        }
+        footer .subscribe-btn:hover {
+            background-color: darkred;
+        }
+        footer .discord-btn {
+            background-color: #5865F2;
+        }
+        footer .discord-btn:hover {
+            background-color: #3c45b5;
+        }
+        footer .footer-text {
+            margin-top: 20px;
+        }
+        .gallery {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .gallery img {
+            max-width: 200px;
+            margin: 10px;
+            border-radius: 5px;
+        }
+        .alert-message {
+            color: red;
+            font-weight: bold;
+        }
+        .file-preview {
+            margin-top: 10px;
+            color: #d1d1d1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Pastecop Official</h1>
+    </header>
+
+    <div class="container">
+        <input class="input-box" id="noteTitle" type="text" placeholder="Enter your title here...">
+        <textarea class="input-box" id="noteContent" rows="10" placeholder="Write your note here..."></textarea>
+        <button class="btn" onclick="saveNote()">Save Note</button>
+        <button class="btn" onclick="copyNote()">Copy Note</button>
+
+        <!-- Upload File Section -->
+        <div>
+            <input type="file" id="fileInput" class="input-box" multiple onchange="previewFile()">
+            <button class="btn" onclick="uploadFiles()">Upload Files</button>
+            <div id="alertMessage" class="alert-message"></div>
+            <div id="filePreview" class="file-preview"></div> <!-- File preview and cancel option -->
+        </div>
+        
+        <!-- Upload Image Section -->
+        <div>
+            <input type="file" id="imageInput" class="input-box" accept="image/*" onchange="previewImage()">
+            <button class="btn" onclick="uploadImage()">Upload Image</button>
+            <div id="imagePreview" class="file-preview"></div> <!-- Image preview and cancel option -->
+        </div>
+
+        <!-- Gallery -->
+        <div class="gallery" id="imageGallery"></div>
+    </div>
+
+    <footer>
+        <a class="subscribe-btn" href="https://youtube.com/@retux-frl?si=bxYeqD1jw5PLhTtf" target="_blank">Subscribe My YouTube</a>
+        <a class="discord-btn" href="https://discord.gg/jn57DUxYax" target="_blank">Join My Discord</a>
+        <div class="footer-text" id="footer-text"></div>
+    </footer>
+
+    <script>
+        let isBanned = false; // Flag to track if the user is banned
+
+        // Fungsi untuk menyimpan catatan
+        function saveNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+
+            if (!title || !content) {
+                alert("Title and content cannot be empty!");
+                return;
+            }
+
+            const shareLink = `${window.location.origin}?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}`;
+            alert(`Note saved! Share this link: ${shareLink}`);
+        }
+
+        // Fungsi untuk menyalin catatan ke clipboard
+        function copyNote() {
+            const content = document.getElementById('noteContent').value.trim();
+            if (!content) {
+                alert("Nothing to copy!");
+                return;
+            }
+
+            navigator.clipboard.writeText(content)
+                .then(() => alert("Note copied to clipboard!"))
+                .catch(err => console.error("Failed to copy text:", err));
+        }
+
+        // Fungsi untuk preview file yang dipilih
+        function previewFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (file) {
+                const preview = document.getElementById('filePreview');
+                preview.innerHTML = `
+                    <span>${file.name}</span>
+                    <button class="btn" onclick="removeFile()">Cancel</button>
+                `;
+            }
+        }
+
+        // Fungsi untuk menghapus file yang dipilih
+        function removeFile() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.value = ""; // Clear the file input
+            document.getElementById('filePreview').innerHTML = ""; // Clear the preview
+        }
+
+        // Fungsi untuk upload file dan mendeteksi file berbahaya
+        function uploadFiles() {
+            if (isBanned) {
+                alert("You are banned from uploading files for 3 hours due to policy violation!");
+                return;
+            }
+
+            const files = document.getElementById('fileInput').files;
+            if (files.length === 0) {
+                alert("Please select files to upload!");
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+
+                // Cek ekstensi file berbahaya
+                if (file.name.endsWith(".exe") || file.name.endsWith(".bat") || file.name.endsWith(".js")) {
+                    alert("This file type is not allowed!");
+                    return;
+                }
+            }
+
+            alert("Files uploaded successfully!");
+        }
+
+        // Fungsi untuk preview image yang dipilih
+        function previewImage() {
+            const imageInput = document.getElementById('imageInput');
+            const imageFile = imageInput.files[0];
+            if (imageFile) {
+                const imageURL = URL.createObjectURL(imageFile);
+                const preview = document.getElementById('imagePreview');
+                preview.innerHTML = `
+                    <span>${imageFile.name}</span>
+                    <button class="btn" onclick="removeImage()">Cancel</button>
+                `;
+            }
+        }
+
+        // Fungsi untuk menghapus gambar yang dipilih
+        function removeImage() {
+            const imageInput = document.getElementById('imageInput');
+            imageInput.value = ""; // Clear the image input
+            document.getElementById('imagePreview').innerHTML = ""; // Clear the preview
+        }
+
+        // Fungsi untuk upload gambar dan deteksi gambar 18+
+        function uploadImage() {
+            if (isBanned) {
+                alert("You are banned from uploading files for 3 hours due to policy violation!");
+                return;
+            }
+
+            const imageInput = document.getElementById('imageInput');
+            const imageFile = imageInput.files[0];
+
+            if (!imageFile) {
+                alert("Please select an image to upload!");
+                return;
+            }
+
+            // Cek nama file untuk mendeteksi gambar 18+
+            const imageName = imageFile.name.toLowerCase();
+            if (imageName.includes("18+") || imageName.includes("explicit")) {
+                isBanned = true;
+                document.getElementById('alertMessage').innerText = "You have violated the rules! You cannot upload files for 3 hours.";
+                setTimeout(() => {
+                    isBanned = false;
+                    document.getElementById('alertMessage').innerText = "";
+                }, 10800000); // Banned for 3 hours
+                return;
+            }
+
+            const imageURL = URL.createObjectURL(imageFile);
+            const imageElement = document.createElement('img');
+            imageElement.src = imageURL;
+            imageElement.alt = imageFile.name;
+            document.getElementById('imageGallery').appendChild(imageElement);
+        }
+
+        // Mengatur konten footer secara dinamis
+        function updateFooter() {
+            const year = new Date().getFullYear();
+            document.getElementById('footer-text').innerHTML = `&copy; ${year} RETUX COMMUNITY. All rights reserved.`;
+        }
+
+        // Panggil fungsi saat halaman dimuat
+        updateFooter();
+    </script>
+</body>
+</html>
